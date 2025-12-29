@@ -1,118 +1,69 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   TextInput,
-  Button,
   FlatList,
   Text,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  Image,
 } from "react-native";
-import io from "socket.io-client";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { API_BASE_URL } from "../config";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-
-const socket = io(API_BASE_URL);
 
 const ChatScreen = () => {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
-  const params = useLocalSearchParams();
-  if (!params) return <Text>No conversation selected</Text>;
 
-  const conversationId = params.conversationId as string;
-  const userId = params.userId as string;
-  const receiverId = params.receiverId as string;
-  const client = params.client ? JSON.parse(params.client as string) : null;
+  const userId = "user1";
+  const client = { id: "client1", name: "Alice Johnson", avatar: "https://i.pravatar.cc/100?img=5" };
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState([
+    { _id: "m1", senderId: "client1", message: "Hi! Are you available for a new project?", createdAt: new Date("2025-12-27T09:00:00") },
+    { _id: "m2", senderId: "user1", message: "Hello Alice! Yes, I am available.", createdAt: new Date("2025-12-27T09:05:00") },
+    { _id: "m3", senderId: "client1", message: "Great! I need a logo designed by tomorrow.", createdAt: new Date("2025-12-27T09:07:00") },
+    { _id: "m4", senderId: "user1", message: "Sure, I can do that. Do you have any references?", createdAt: new Date("2025-12-27T09:10:00") },
+  ]);
+
   const [text, setText] = useState("");
-
-  useEffect(() => {
-    if (!conversationId) return;
-
-    socket.emit("addUser", userId);
-
-    const handleGetMessage = (msg) => {
-      if (msg.conversationId === conversationId) {
-        setMessages((prev = []) => {
-          if (!prev.some((m) => m._id === msg._id)) return [...prev, msg];
-          return prev;
-        });
-      }
-    };
-
-    socket.on("getMessage", handleGetMessage);
-
-    fetch(`${API_BASE_URL}/messages/${conversationId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data.data)) setMessages(data.data);
-        else setMessages([]);
-      })
-      .catch((err) => {
-        console.log("Failed to fetch previous messages", err);
-        setMessages([]);
-      });
-
-    return () => {
-      socket.off("getMessage", handleGetMessage);
-    };
-  }, [conversationId, userId]);
 
   const sendMessage = () => {
     if (!text) return;
 
-    const msgData = {
-      conversationId,
+    const newMsg = {
+      _id: `m${messages.length + 1}`,
       senderId: userId,
-      receiverId,
       message: text,
       createdAt: new Date(),
     };
-
-    fetch(`${API_BASE_URL}/messages/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(msgData),
-    })
-      .then((res) => res.json())
-      .then((savedMsg) => {
-        const newMsg = savedMsg.data;
-        setMessages((prev = []) => [...prev, newMsg]);
-        socket.emit("sendMessage", newMsg);
-        setText("");
-        flatListRef.current?.scrollToEnd({ animated: true });
-      })
-      .catch((err) => console.log("Failed to send message", err));
+    setMessages((prev) => [...prev, newMsg]);
+    setText("");
+    flatListRef.current?.scrollToEnd({ animated: true });
   };
 
-  const renderItem = ({ item }) => (
-    <View
-      style={[
-        styles.msgContainer,
-        item.senderId === userId ? styles.myMsg : styles.theirMsg,
-      ]}
-    >
-      <Text style={styles.msgText}>{item.message}</Text>
-      <Text style={styles.time}>
-        {new Date(item.createdAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </Text>
-    </View>
-  );
+  const renderItem = ({ item }) => {
+    const isMe = item.senderId === userId;
+    return (
+      <View style={[styles.msgRow, isMe ? { justifyContent: "flex-end" } : { justifyContent: "flex-start" }]}>
+        {!isMe && (
+          <Image source={{ uri: client.avatar }} style={styles.avatar} />
+        )}
+        <View style={[styles.msgBubble, isMe ? styles.myMsg : styles.theirMsg]}>
+          <Text style={styles.msgText}>{item.message}</Text>
+          <Text style={styles.time}>
+            {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </Text>
+        </View>
+        {isMe && <View style={{ width: 36 }} />} {/* spacer for alignment */}
+      </View>
+    );
+  };
 
   return (
-    <LinearGradient
-      colors={["#f0f4f7", "#d9e2ec"]}
-      style={{ flex: 1 }}
-    >
+    <LinearGradient colors={["#f0f4f7", "#d9e2ec"]} style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -123,7 +74,7 @@ const ChatScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Feather name="arrow-left" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{client?.name || "Chat"}</Text>
+          <Text style={styles.headerTitle}>{client.name}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -131,9 +82,9 @@ const ChatScreen = () => {
         <FlatList
           ref={flatListRef}
           data={messages}
-          keyExtractor={(item, index) => item._id || index.toString()}
+          keyExtractor={(item) => item._id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingVertical: 8 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
 
@@ -145,7 +96,12 @@ const ChatScreen = () => {
             placeholder="Type a message"
             style={styles.input}
           />
-          <Button title="Send" onPress={sendMessage} />
+          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+            <Feather name="send" size={20} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.attachButton}>
+            <Feather name="paperclip" size={20} color="#555" />
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </LinearGradient>
@@ -168,31 +124,49 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#333",
   },
-  msgContainer: {
-    padding: 10,
-    borderRadius: 12,
-    marginVertical: 4,
-    maxWidth: "75%",
+  msgRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginVertical: 6,
   },
-  myMsg: { backgroundColor: "#DCF8C6", alignSelf: "flex-end" },
-  theirMsg: { backgroundColor: "#fff", alignSelf: "flex-start" },
+  avatar: { width: 36, height: 36, borderRadius: 18, marginRight: 8 },
+  msgBubble: {
+    maxWidth: "75%",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+  },
+  myMsg: { backgroundColor: "#DCF8C6", borderTopRightRadius: 0 },
+  theirMsg: { backgroundColor: "#fff", borderTopLeftRadius: 0 },
   msgText: { fontSize: 15, color: "#111" },
-  time: { fontSize: 10, color: "#555", marginTop: 2, textAlign: "right" },
+  time: { fontSize: 10, color: "#555", marginTop: 4, textAlign: "right" },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 8,
+    padding: 10,
     borderTopWidth: 1,
     borderTopColor: "#ddd",
     backgroundColor: "#fff",
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    padding: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 20,
+    backgroundColor: "#f2f2f7",
     marginRight: 8,
-    borderColor: "#ccc",
+    fontSize: 15,
+  },
+  sendButton: {
+    backgroundColor: "#2563EB",
+    padding: 10,
+    borderRadius: 20,
+    marginRight: 6,
+  },
+  attachButton: {
+    backgroundColor: "#E5E7EB",
+    padding: 10,
+    borderRadius: 20,
   },
 });
 

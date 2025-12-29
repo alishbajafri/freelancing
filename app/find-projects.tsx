@@ -1,36 +1,76 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  StyleSheet, 
+  TouchableOpacity, 
+  FlatList 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config';
 import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import ProjectCard from '@/components/ProjectCard';
 
 export default function FindProjectsScreen() {
   const router = useRouter();
-  const [projects, setProjects] = useState([]);
-  const [filteredProjects, setFilteredProjects] = useState([]);
+
+  // 🔹 Static project data
+  const STATIC_PROJECTS = [
+    {
+      id: '1',
+      title: 'React Native Mobile App',
+      client: { name: 'Tech Startup' },
+      budgetMin: 300,
+      budgetMax: 600,
+      postedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+      skills: ['React Native', 'JavaScript', 'UI/UX', 'API Integration'],
+      description: 'Build a modern mobile app with React Native.',
+      status: 'available',
+      category: ['Mobile App', 'UI/UX Design'],
+    },
+    {
+      id: '2',
+      title: 'Website Redesign',
+      client: { name: 'Design Agency' },
+      budgetMin: 200,
+      budgetMax: 500,
+      postedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      skills: ['HTML', 'CSS', 'JavaScript', 'UI/UX'],
+      description: 'Redesign an existing website to modern standards.',
+      status: 'available',
+      category: ['Web Development', 'UI/UX Design'],
+    },
+    {
+      id: '3',
+      title: 'Backend API Development',
+      client: { name: 'SaaS Company' },
+      budgetMin: 400,
+      budgetMax: 800,
+      postedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+      skills: ['Node.js', 'Express', 'MongoDB', 'API'],
+      description: 'Develop RESTful APIs for a SaaS platform.',
+      status: 'available',
+      category: ['Backend', 'Web Development'],
+    },
+    {
+      id: '4',
+      title: 'E-commerce Mobile App',
+      client: { name: 'Retail Startup' },
+      budgetMin: 500,
+      budgetMax: 1000,
+      postedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      skills: ['React Native', 'Stripe', 'UI/UX'],
+      description: 'Create a shopping app with payment integration.',
+      status: 'available',
+      category: ['Mobile App', 'UI/UX Design'],
+    },
+  ];
+
+  const [projects, setProjects] = useState(STATIC_PROJECTS);
+  const [filteredProjects, setFilteredProjects] = useState(STATIC_PROJECTS);
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState('All');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/projects`);
-        // Only keep projects with status "available"
-        const availableProjects = res.data.filter(p => p.status === 'available');
-        setProjects(availableProjects);
-        setFilteredProjects(availableProjects);
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
-  }, []);
 
   // 🔍 Search & filter logic
   useEffect(() => {
@@ -41,11 +81,10 @@ export default function FindProjectsScreen() {
     if (filterType !== 'All') {
       result = result.filter((p) =>
         Array.isArray(p.category)
-          ? p.category.includes(filterType) // works for array
-          : p.category === filterType       // fallback if somehow string
+          ? p.category.includes(filterType)
+          : p.category === filterType
       );
     }
-
 
     setFilteredProjects(result);
   }, [searchText, filterType, projects]);
@@ -94,40 +133,21 @@ export default function FindProjectsScreen() {
       </View>
 
       {/* 🧩 Project List */}
-      {loading ? (
-        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={filteredProjects}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <ProjectCard project={item} />}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        />
-      )}
+      <FlatList
+        data={filteredProjects}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => <ProjectCard project={item} />}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  searchContainer: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-  },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
+  searchContainer: { marginHorizontal: 16, marginBottom: 12 },
   searchInput: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -136,30 +156,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  filterButton: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  filterButtonActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  filterButtonText: {
-    color: '#374151',
-    fontWeight: '600',
-  },
-  filterButtonTextActive: {
-    color: '#FFFFFF',
-  },
+  filterContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginBottom: 16 },
+  filterButton: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#FFFFFF' },
+  filterButtonActive: { backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
+  filterButtonText: { color: '#374151', fontWeight: '600' },
+  filterButtonTextActive: { color: '#FFFFFF' },
 });

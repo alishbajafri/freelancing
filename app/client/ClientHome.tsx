@@ -134,8 +134,15 @@ export default function ClientHome() {
             status={project.status}
             freelancer={project.freelancer}
             deadline={project.deadline}
+            onPress={() =>
+              router.push({
+                pathname: '/client/ProjectDetail',
+                params: { id: project.id },
+              })
+            }
           />
         ))}
+
       </View>
     </ScrollView>
   );

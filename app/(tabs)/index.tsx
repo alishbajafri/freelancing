@@ -1,25 +1,58 @@
-//hompe page 
+// HomeScreen.tsx (STATIC DATA VERSION)
+
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config';
-import { storageGet, storageSet } from "@/utils/storage";
-
-
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, Wallet, TrendingUp, Star } from 'lucide-react-native';
+
+import { storageGet } from "@/utils/storage";
 import { useAuth } from '@/contexts/AuthContext';
 import { useWallet } from '@/contexts/WalletContext';
+
 import ProjectCard from '@/components/ProjectCard';
 import StatsCard from '@/components/StatsCard';
+
+/* =======================
+   STATIC DATA
+======================= */
+
+const STATIC_PROJECTS = [
+  {
+    id: '1',
+    title: 'React Native App',
+    description: 'Build a mobile app using React Native',
+    budget: 500,
+    skills: ['react native', 'javascript'],
+    status: 'available',
+  },
+  {
+    id: '2',
+    title: 'Node.js API',
+    description: 'Create REST APIs with Node.js',
+    budget: 300,
+    skills: ['node.js', 'express'],
+    status: 'available',
+  },
+];
+
+const STATIC_EARNINGS = [
+  { id: '1', amount: 200 },
+  { id: '2', amount: 450 },
+  { id: '3', amount: 150 },
+];
+
+const STATIC_REVIEWS = [
+  { id: '1', rating: 4.5 },
+  { id: '2', rating: 5 },
+  { id: '3', rating: 4 },
+];
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -29,103 +62,61 @@ export default function HomeScreen() {
   const [recentProjects, setRecentProjects] = useState<any[]>([]);
   const [earnings, setEarnings] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
+  /* =======================
+     ROLE CHECK
+  ======================= */
   useEffect(() => {
     const checkRole = async () => {
       const storedUser = await storageGet("user");
       if (storedUser) {
-        const user = JSON.parse(storedUser);
-
-        if (user.role?.toLowerCase() !== "freelancer") {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.role?.toLowerCase() !== "freelancer") {
           router.replace("/client");
-
         }
       }
     };
-
     checkRole();
   }, []);
 
-
+  /* =======================
+     LOAD STATIC DATA
+  ======================= */
   useEffect(() => {
-    if (!user) return;
+    setRecentProjects(STATIC_PROJECTS);
+    setEarnings(STATIC_EARNINGS);
+    setReviews(STATIC_REVIEWS);
+  }, []);
 
-    const fetchData = async () => {
-      try {
-        const [projectsRes, earningsRes, reviewsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/projects`),
-          axios.get(`${API_BASE_URL}/earnings`),
-          axios.get(`${API_BASE_URL}/reviews`),
-        ]);
+  /* =======================
+     CALCULATIONS
+  ======================= */
+  const totalEarnings = earnings.reduce(
+    (acc, e) => acc + Number(e.amount),
+    0
+  );
 
-        const userSkills = (user.skills || []).map(s => s.trim().toLowerCase());
-
-        const availableProjects = projectsRes.data.filter((project: any) => {
-          if (!project.status || !project.skills) return false;
-          if (project.status.toLowerCase() !== 'available') return false;
-
-          const projectSkills = project.skills.map((s: string) => s.trim().toLowerCase());
-
-          // Return true if any skill matches exactly
-          return projectSkills.some(ps => userSkills.includes(ps));
-        });
-
-        setRecentProjects(availableProjects);
-
-        setEarnings(earningsRes.data);
-
-        // Calculate review ratings
-        const reviewsWithRating = reviewsRes.data.map((r: any) => {
-          const milestoneRatings = (r.milestones || []).map((m: any) =>
-            Number(m.rating) || 0
-          );
-          const extraRatings = [
-            Number(r.communication) || 0,
-            Number(r.quality) || 0,
-            Number(r.punctuality) || 0,
-          ];
-          const allRatings = [...milestoneRatings, ...extraRatings];
-          const averageRating =
-            allRatings.length > 0
-              ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1)
-              : '0';
-          return { ...r, rating: averageRating };
-        });
-
-        setReviews(reviewsWithRating);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user]);
-
-  // Calculate total earnings
-  const totalEarnings = earnings.reduce((acc, e) => acc + Number(e.amount), 0);
-
-  // Calculate average rating for user
   const avgRating =
     reviews.length > 0
       ? (
-          reviews.reduce((acc, r) => acc + Number(r.rating), 0) / reviews.length
+          reviews.reduce((acc, r) => acc + Number(r.rating), 0) /
+          reviews.length
         ).toFixed(1)
-      : user?.rating?.toFixed(1) || '0';
+      : '0';
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
+
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good morning,</Text>
-            <Text style={styles.userName}>{user?.name || 'Freelancer'}</Text>
+            <Text style={styles.userName}>
+              {user?.name || 'Freelancer'}
+            </Text>
           </View>
+
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.walletButton}
@@ -165,6 +156,7 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
+
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.actionButton}
@@ -172,6 +164,7 @@ export default function HomeScreen() {
             >
               <Text style={styles.actionButtonText}>Find Projects</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSecondary]}
               onPress={() => router.push('/profile-view')}
@@ -192,29 +185,19 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recommended Projects</Text>
 
-          {loading && (
-            <ActivityIndicator size="small" style={{ marginVertical: 16 }} />
-          )}
-
-          {error && (
-            <Text style={{ color: 'red', marginBottom: 12 }}>{error}</Text>
-          )}
-
-          {!loading && !error && recentProjects.length === 0 && (
-            <Text style={{ color: '#6B7280', marginBottom: 12 }}>
-              No projects found.
-            </Text>
-          )}
-
-          {!loading &&
-            recentProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
+          {recentProjects.map(project => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+/* =======================
+   STYLES
+======================= */
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
@@ -241,19 +224,36 @@ const styles = StyleSheet.create({
   },
   walletText: { fontSize: 14, fontWeight: '600', color: '#3B82F6' },
   notificationButton: { padding: 8 },
-  statsContainer: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 24 },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 24,
+  },
   section: { paddingHorizontal: 20, marginBottom: 24 },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 16 },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
   quickActions: { flexDirection: 'row', gap: 12 },
   actionButton: {
     flex: 1,
     backgroundColor: '#3B82F6',
     paddingVertical: 12,
-    paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
-  actionButtonSecondary: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D5DB' },
-  actionButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  actionButtonSecondary: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
   actionButtonSecondaryText: { color: '#374151' },
 });

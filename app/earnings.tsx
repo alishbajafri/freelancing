@@ -1,37 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config';
+import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
   Dimensions,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function EarningsScreen() {
-  const [earnings, setEarnings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/earnings`)
-      .then((response) => setEarnings(response.data))
-      .catch((error) => console.error('Error fetching earnings:', error))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
-  }
+  // Static earnings data till December
+  const earnings = [
+    { month: 'Jan', amount: 1200 },
+    { month: 'Feb', amount: 1500 },
+    { month: 'Mar', amount: 1000 },
+    { month: 'Apr', amount: 1700 },
+    { month: 'May', amount: 2000 },
+    { month: 'Jun', amount: 1800 },
+    { month: 'Jul', amount: 2200 },
+    { month: 'Aug', amount: 2100 },
+    { month: 'Sep', amount: 2300 },
+    { month: 'Oct', amount: 2500 },
+    { month: 'Nov', amount: 2400 },
+    { month: 'Dec', amount: 2600 },
+  ];
 
   const months = earnings.map((e) => e.month);
   const totals = earnings.map((e) => e.amount);

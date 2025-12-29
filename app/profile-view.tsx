@@ -1,167 +1,96 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Image,
   TouchableOpacity,
   TextInput,
-  Alert,
-  Linking,
   LayoutAnimation,
   Platform,
   UIManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import axios from "axios";
-import * as ImagePicker from "expo-image-picker";
 import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react-native";
-import { useRouter } from "expo-router";
-import { API_BASE_URL } from "@/config";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 export default function ProfileViewScreen() {
-  const router = useRouter();
-
-  // profile + projects + reviews
-  const [user, setUser] = useState<any>(null);
-  const [completedProjects, setCompletedProjects] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // edit state + form fields
   const [editMode, setEditMode] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formTitle, setFormTitle] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formSkills, setFormSkills] = useState("");
-  const [formBio, setFormBio] = useState("");
-  const [formPricing, setFormPricing] = useState("");
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
-
-  // expanded project index for dropdown
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
- useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/profile`);
-      setUser(res.data);
-      setAvatarUri(res.data.avatar || null);
-      setFormName(res.data.name || "");
-      setFormTitle(res.data.title || "");
-      setFormEmail(res.data.email || "");
-      setFormSkills((res.data.skills || []).join(", "));
-      setFormBio(res.data.bio || "");
-      setFormPricing(res.data.pricing || "");
-
-      const completed = (res.data.projects || []).filter((p: any) => (p.status || "").toLowerCase() === "completed");
-      setCompletedProjects(completed);
-
-      setReviews(res.data.reviews || []);
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to load profile data");
-    } finally {
-      setLoading(false);
-    }
+  // 🔹 Static user data
+  const user = {
+    name: "John Doe",
+    title: "UI/UX Designer",
+    email: "john.doe@example.com",
+    skills: ["React Native", "UI Design", "Figma"],
+    bio: "Creative and detail-oriented designer passionate about building smooth mobile experiences.",
+    pricing: "$25/hr",
+    avatar: null, // you can add a URI here
   };
 
-  fetchProfile();
-}, []);
+  const completedProjects = [
+    { id: "1", title: "Mobile App Redesign" },
+    { id: "2", title: "Website Development" },
+  ];
 
+  const reviews = [
+    {
+      projectTitle: "Mobile App Redesign",
+      communication: 5,
+      quality: 4,
+      punctuality: 5,
+      milestones: [
+        { title: "UI Design", rating: 5, comment: "Excellent design work" },
+        { title: "Prototype", rating: 4, comment: "Smooth transitions" },
+      ],
+      feedback: "Great collaboration and timely delivery.",
+    },
+    {
+      projectTitle: "Website Development",
+      communication: 4,
+      quality: 4,
+      punctuality: 4,
+      milestones: [
+        { title: "Backend Setup", rating: 4, comment: "Solid implementation" },
+      ],
+      feedback: "Good work overall.",
+    },
+  ];
 
-  // calculate average rating for a project based on reviews array
-  const getProjectAverageRating = (projectTitle: string) => {
-    if (!reviews || reviews.length === 0) return null;
-    const review = reviews.find((r: any) => r.projectTitle === projectTitle);
-    if (!review) return null;
-    const milestoneRatings = (review.milestones || []).map((m: any) => Number(m.rating || 0));
-    const other = [Number(review.communication || 0), Number(review.quality || 0), Number(review.punctuality || 0)];
-    const all = [...milestoneRatings, ...other].filter((v) => typeof v === "number" && !Number.isNaN(v));
-    if (all.length === 0) return null;
-    const avg = all.reduce((a: number, b: number) => a + b, 0) / all.length;
-    return Number(avg.toFixed(1));
-  };
-
-  // pick image (expo-image-picker)
-  const pickImage = async () => {
-    if (!editMode) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission required", "Permission to access media library is required");
-      return;
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if ((res as any).canceled) return;
-    const uri = (res as any).assets ? (res as any).assets[0].uri : (res as any).uri;
-    if (uri) setAvatarUri(uri);
-  };
-
-  const openEmail = (email?: string) => {
-    if (!email) return;
-    Linking.openURL(`mailto:${email}`);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const payload = {
-        name: formName,
-        title: formTitle,
-        email: formEmail,
-        skills: formSkills.split(",").map((s) => s.trim()).filter(Boolean),
-        bio: formBio,
-        pricing: formPricing,
-        avatar: avatarUri,
-        balance: user?.balance || 0, // ✅ Preserve balance
-      };
-
-      await axios.put(`${API_BASE_URL}/profile`, payload); // ✅ PUT instead of PATCH
-
-      setUser((prev) => ({ ...(prev || {}), ...payload }));
-      Alert.alert("Success", "Profile saved successfully.");
-      setEditMode(false);
-    } catch (err) {
-      console.error("Save error:", err);
-      Alert.alert("Error", "Failed to save profile.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  const [formName, setFormName] = useState(user.name);
+  const [formTitle, setFormTitle] = useState(user.title);
+  const [formEmail, setFormEmail] = useState(user.email);
+  const [formSkills, setFormSkills] = useState(user.skills.join(", "));
+  const [formBio, setFormBio] = useState(user.bio);
+  const [formPricing, setFormPricing] = useState(user.pricing);
+  const [avatarUri, setAvatarUri] = useState<string | null>(user.avatar);
 
   const toggleExpand = (index: number) => {
     LayoutAnimation.easeInEaseOut();
     setExpandedIndex((prev) => (prev === index ? null : index));
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  }
+  const getProjectAverageRating = (projectTitle: string) => {
+    const review = reviews.find((r) => r.projectTitle === projectTitle);
+    if (!review) return null;
+    const milestoneRatings = review.milestones?.map((m) => Number(m.rating || 0)) || [];
+    const other = [Number(review.communication), Number(review.quality), Number(review.punctuality)];
+    const all = [...milestoneRatings, ...other].filter((v) => typeof v === "number" && !Number.isNaN(v));
+    if (all.length === 0) return null;
+    return Number((all.reduce((a, b) => a + b, 0) / all.length).toFixed(1));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity>
             <ArrowLeft size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
@@ -169,136 +98,95 @@ export default function ProfileViewScreen() {
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          <TouchableOpacity onPress={pickImage} disabled={!editMode} style={styles.avatarWrapper}>
+          <View style={styles.avatarWrapper}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Text style={styles.avatarInitial}>{(user?.name || "?").charAt(0).toUpperCase()}</Text>
+                <Text style={styles.avatarInitial}>{user.name.charAt(0)}</Text>
               </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Name */}
-          {editMode ? (
-            <TextInput style={styles.nameInput} value={formName} onChangeText={setFormName} />
-          ) : (
-            <Text style={styles.name}>{user?.name}</Text>
-          )}
-
-          {/* Title */}
-          {editMode ? (
-            <TextInput style={[styles.input, { marginTop: 8 }]} value={formTitle} onChangeText={setFormTitle} placeholder="e.g. UI/UX Designer" />
-          ) : (
-            <Text style={styles.role}>{user?.title}</Text>
-          )}
-
-          {/* Email */}
-          <View style={{ marginTop: 8, width: "100%" }}>
-            {editMode ? (
-              <TextInput style={styles.input} value={formEmail} onChangeText={setFormEmail} keyboardType="email-address" placeholder="email@example.com" />
-            ) : (
-              <TouchableOpacity onPress={() => openEmail(user?.email)}>
-                <Text style={styles.emailLink}>{user?.email}</Text>
-              </TouchableOpacity>
             )}
           </View>
 
-          {/* Skills */}
+          <TextInput style={styles.nameInput} value={formName} onChangeText={setFormName} editable={editMode} />
+          <TextInput style={[styles.input, { marginTop: 8 }]} value={formTitle} onChangeText={setFormTitle} editable={editMode} />
+          <TextInput style={styles.input} value={formEmail} onChangeText={setFormEmail} editable={editMode} keyboardType="email-address" />
+
           <View style={{ width: "100%", marginTop: 12 }}>
             <Text style={styles.sectionLabel}>Skills</Text>
             {editMode ? (
-              <TextInput style={styles.input} value={formSkills} onChangeText={setFormSkills} placeholder="comma, separated, skills" />
+              <TextInput style={styles.input} value={formSkills} onChangeText={setFormSkills} />
             ) : (
               <View style={styles.skillsContainer}>
-                {(user?.skills || []).length === 0 ? (
-                  <Text style={styles.emptyText}>No skills listed</Text>
-                ) : (
-                  (user.skills || []).map((skill: string) => (
-                    <View key={skill} style={styles.skillBadge}>
-                      <Text style={styles.skillText}>{skill}</Text>
-                    </View>
-                  ))
-                )}
+                {user.skills.map((skill) => (
+                  <View key={skill} style={styles.skillBadge}>
+                    <Text style={styles.skillText}>{skill}</Text>
+                  </View>
+                ))}
               </View>
             )}
           </View>
 
-          {/* Bio */}
           <View style={styles.bioContainer}>
             <Text style={styles.sectionLabel}>Bio</Text>
             {editMode ? (
-              <TextInput style={styles.bioInput} value={formBio} onChangeText={setFormBio} placeholder="Tell people about yourself..." multiline />
+              <TextInput style={styles.bioInput} value={formBio} onChangeText={setFormBio} multiline />
             ) : (
               <View style={styles.bioCard}>
-                <Text style={styles.bioText}>{user?.bio || "Creative and detail-oriented designer passionate about building smooth mobile experiences."}</Text>
+                <Text style={styles.bioText}>{formBio}</Text>
               </View>
             )}
           </View>
 
-          {/* Pricing */}
           <View style={{ width: "100%", marginTop: 12 }}>
             <Text style={styles.sectionLabel}>Pricing</Text>
             {editMode ? (
-              <TextInput style={styles.input} value={formPricing} onChangeText={setFormPricing} placeholder="$25/hr" />
+              <TextInput style={styles.input} value={formPricing} onChangeText={setFormPricing} />
             ) : (
               <View style={styles.pricingBox}>
-                <Text style={styles.pricingText}>{user?.pricing || "$25/hr"}</Text>
-                <Text style={styles.pricingNote}>Flexible based on project scope and duration</Text>
+                <Text style={styles.pricingText}>{formPricing}</Text>
               </View>
             )}
           </View>
 
-          {/* Edit/Save */}
-          <TouchableOpacity style={editMode ? styles.saveButton : styles.editButton} onPress={editMode ? handleSave : () => setEditMode(true)} disabled={saving}>
-            {saving ? <ActivityIndicator /> : <Text style={styles.buttonText}>{editMode ? "Save Changes" : "Edit Profile"}</Text>}
+          <TouchableOpacity style={editMode ? styles.saveButton : styles.editButton} onPress={() => setEditMode(!editMode)}>
+            <Text style={styles.buttonText}>{editMode ? "Save Changes" : "Edit Profile"}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Completed Projects header */}
+        {/* Completed Projects */}
         <Text style={styles.sectionTitle}>Completed Projects</Text>
+        {completedProjects.map((proj, idx) => {
+          const avg = getProjectAverageRating(proj.title);
+          const review = reviews.find((r) => r.projectTitle === proj.title);
+          const preview = review?.feedback || null;
+          const expanded = expandedIndex === idx;
 
-        {/* Completed Projects list */}
-        {completedProjects.length === 0 ? (
-          <Text style={styles.emptyText}>No completed projects yet.</Text>
-        ) : (
-          completedProjects.map((proj, idx) => {
-            const avg = getProjectAverageRating(proj.title);
-            const review = reviews.find((r: any) => (r.projectTitle || r.project || "").toLowerCase() === (proj.title || "").toLowerCase());
-            const preview = review?.feedback || review?.comment || review?.text || null;
-            const expanded = expandedIndex === idx;
+          return (
+            <View key={proj.id} style={styles.projectCard}>
+              <TouchableOpacity style={styles.projectHeader} onPress={() => toggleExpand(idx)}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.projectTitle}>{proj.title}</Text>
+                  {avg !== null && <Text style={styles.projectRating}>⭐ {avg} / 5</Text>}
+                  {preview ? <Text style={styles.projectReview} numberOfLines={2}>“{preview}”</Text> : <Text style={styles.projectNoReview}>No review available</Text>}
+                </View>
+                {expanded ? <ChevronUp size={22} color="#111827" /> : <ChevronDown size={22} color="#111827" />}
+              </TouchableOpacity>
 
-            return (
-              <View key={proj.id ?? `proj-${idx}`} style={styles.projectCard}>
-                <TouchableOpacity style={styles.projectHeader} activeOpacity={0.8} onPress={() => toggleExpand(idx)}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.projectTitle}>{proj.title}</Text>
-                    {avg !== null && <Text style={styles.projectRating}>⭐ {avg} / 5</Text>}
-                    {preview ? <Text style={styles.projectReview} numberOfLines={2}>“{preview}”</Text> : <Text style={styles.projectNoReview}>No review available</Text>}
-                  </View>
-
-                  {expanded ? <ChevronUp size={22} color="#111827" /> : <ChevronDown size={22} color="#111827" />}
-                </TouchableOpacity>
-
-                {expanded && (
-                  <View style={styles.milestonesContainer}>
-                    {review?.milestones && review.milestones.length > 0 ? (
-                      review.milestones.map((m: any, i: number) => (
-                        <View key={i} style={styles.milestoneBox}>
-                          <Text style={styles.milestoneTitle}>{m.title}</Text>
-                          <Text style={styles.milestoneRating}>⭐ {Number(m.rating || 0).toFixed(1)} / 5</Text>
-                          {m.comment ? <Text style={styles.milestoneComment}>{m.comment}</Text> : null}
-                        </View>
-                      ))
-                    ) : (
-                      <Text style={styles.noMilestones}>No milestone ratings found.</Text>
-                    )}
-                  </View>
-                )}
-              </View>
-            );
-          })
-        )}
+              {expanded && (
+                <View style={styles.milestonesContainer}>
+                  {review?.milestones.map((m, i) => (
+                    <View key={i} style={styles.milestoneBox}>
+                      <Text style={styles.milestoneTitle}>{m.title}</Text>
+                      <Text style={styles.milestoneRating}>⭐ {m.rating} / 5</Text>
+                      {m.comment && <Text style={styles.milestoneComment}>{m.comment}</Text>}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
 
         <View style={{ height: 60 }} />
       </ScrollView>
@@ -333,45 +221,21 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { backgroundColor: "#e0f2fe", justifyContent: "center", alignItems: "center" },
   avatarInitial: { fontSize: 32, fontWeight: "700", color: "#0369A1" },
 
-  name: { fontSize: 20, fontWeight: "700", color: "#111827" },
   nameInput: { fontSize: 20, fontWeight: "700", color: "#111827", textAlign: "center", width: "100%" },
-
-  role: { fontSize: 14, color: "#6b7280", marginTop: 4 },
-  emailLink: { color: "#2563eb", fontSize: 14, marginTop: 6 },
-
-  sectionLabel: { fontSize: 13, color: "#374151", marginBottom: 6, alignSelf: "flex-start" },
-  input: {
-    backgroundColor: "#f9fafb",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    padding: 10,
-    width: "100%",
-  },
+  input: { backgroundColor: "#f9fafb", borderRadius: 8, borderWidth: 1, borderColor: "#e5e7eb", padding: 10, width: "100%" },
 
   skillsContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
-  skillBadge: {
-    backgroundColor: "#E0F2FE",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginRight: 6,
-    marginBottom: 6,
-  },
+  skillBadge: { backgroundColor: "#E0F2FE", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginRight: 6, marginBottom: 6 },
   skillText: { color: "#0369A1", fontSize: 14, fontWeight: "600" },
 
-  /* Bio */
   bioContainer: { width: "100%", marginTop: 12 },
   bioCard: { backgroundColor: "#f9fafb", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#e5e7eb" },
   bioText: { fontSize: 14.5, color: "#374151", lineHeight: 20 },
   bioInput: { backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#d1d5db", padding: 10, height: 110, textAlignVertical: "top", color: "#111827" },
 
-  /* Pricing */
   pricingBox: { backgroundColor: "#ECFDF5", paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: "#D1FAE5" },
   pricingText: { fontSize: 16, fontWeight: "700", color: "#065F46" },
-  pricingNote: { fontSize: 12, color: "#047857", marginTop: 4 },
 
-  /* Buttons */
   editButton: { backgroundColor: "#3b82f6", marginTop: 12, borderRadius: 10, paddingVertical: 12, alignItems: "center", width: "100%" },
   saveButton: { backgroundColor: "#10b981", marginTop: 12, borderRadius: 10, paddingVertical: 12, alignItems: "center", width: "100%" },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
@@ -379,7 +243,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: "700", color: "#111827", marginTop: 6, marginBottom: 8 },
   emptyText: { textAlign: "center", color: "#777", marginTop: 6 },
 
-  /* Projects */
   projectCard: { backgroundColor: "#fff", borderRadius: 12, padding: 12, marginBottom: 8, shadowColor: "#000", shadowOpacity: 0.04, shadowOffset: { width: 0, height: 1 }, shadowRadius: 3, elevation: 2 },
   projectHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   projectTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
@@ -392,5 +255,4 @@ const styles = StyleSheet.create({
   milestoneTitle: { fontSize: 13, fontWeight: "700", color: "#111827" },
   milestoneComment: { fontSize: 12, color: "#475569", marginTop: 4 },
   milestoneRating: { fontSize: 13, color: "#f59e0b", marginTop: 4 },
-  noMilestones: { color: "#888", fontSize: 13, fontStyle: "italic" },
 });

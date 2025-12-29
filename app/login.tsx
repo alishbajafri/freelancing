@@ -8,8 +8,29 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff } from "lucide-react-native";
-import { useAuth } from "@/contexts/AuthContext";
-import { storageGet } from "@/utils/storage";
+import { storageSet } from "@/utils/storage";
+
+/* =======================
+   STATIC USERS
+======================= */
+const STATIC_USERS = [
+  {
+    id: "1",
+    name: "John Freelancer",
+    email: "freelancer@test.com",
+    password: "123456",
+    role: "freelancer",
+    rating: 4.6,
+    skills: ["react native", "node.js"],
+  },
+  {
+    id: "2",
+    name: "Client User",
+    email: "client@test.com",
+    password: "123456",
+    role: "client",
+  },
+];
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,7 +38,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const { login } = useAuth(); // AuthContext login
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -28,27 +48,26 @@ export default function Login() {
       return;
     }
 
-    try {
-      await login(email, password);
+    // 🔍 Find user in static data
+    const user = STATIC_USERS.find(
+      u =>
+        u.email.toLowerCase() === email.toLowerCase() &&
+        u.password === password
+    );
 
-      // Get saved user from storage
-      const saved = await storageGet("user");
-      const user = saved ? JSON.parse(saved) : null;
+    if (!user) {
+      setErrorMessage("Invalid email or password.");
+      return;
+    }
 
-      if (!user) {
-        setErrorMessage("User data not found.");
-        return;
-      }
+    // 💾 Save user locally (acts like auth)
+    await storageSet("user", JSON.stringify(user));
 
-      // Redirect based on role
-      if (user.role === "freelancer") {
-        router.replace("/");       // Freelancer home
-      } else if (user.role === "client") {
-        router.replace("/client"); // Client dashboard
-      }
-
-    } catch (error: any) {
-      setErrorMessage(error.message || "Login failed.");
+    // 🚀 Redirect based on role
+    if (user.role === "freelancer") {
+      router.replace("/");
+    } else if (user.role === "client") {
+      router.replace("/client");
     }
   };
 
@@ -56,7 +75,9 @@ export default function Login() {
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
 
       <TextInput
         style={styles.input}
@@ -91,10 +112,19 @@ export default function Login() {
       <TouchableOpacity onPress={() => router.push("/signup")}>
         <Text style={styles.link}>Don't have an account? Sign up</Text>
       </TouchableOpacity>
+
+      {/* Demo credentials */}
+      <Text style={styles.demoText}>
+        Freelancer → freelancer@test.com / 123456{"\n"}
+        Client → client@test.com / 123456
+      </Text>
     </View>
   );
 }
 
+/* =======================
+   STYLES
+======================= */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -156,5 +186,11 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 15,
     color: "#3B82F6",
+  },
+  demoText: {
+    marginTop: 25,
+    fontSize: 12,
+    color: "#6B7280",
+    textAlign: "center",
   },
 });

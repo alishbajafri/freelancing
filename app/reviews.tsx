@@ -1,72 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   ScrollView, 
-  ActivityIndicator, 
   Pressable,
   TouchableOpacity
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config';
 import { ArrowLeft, Star } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function ReviewsScreen() {
   const router = useRouter();
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [reviewsRes, projectsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/reviews`),
-          axios.get(`${API_BASE_URL}/projects`)
-        ]);
-
-        const completedProjects = projectsRes.data.filter((p: any) => p.status === 'completed');
-        setProjects(completedProjects);
-
-        const completedTitles = completedProjects.map((p: any) => p.title);
-
-        const filteredReviews = reviewsRes.data.filter((r: any) =>
-          completedTitles.includes(r.projectTitle)
-        );
-
-        // Calculate overall rating for each review
-        const reviewsWithRating = filteredReviews.map((r: any) => {
-          const project = completedProjects.find((p: any) => p.title === r.projectTitle);
-
-          // Get ratings from milestones (from review.milestones if available)
-          const milestoneRatings = (r.milestones || []).map((m: any) => m.rating || 0);
-
-          // Include communication, quality, punctuality
-          const extraRatings = [r.communication || 0, r.quality || 0, r.punctuality || 0];
-          const allRatings = [...milestoneRatings, ...extraRatings];
-
-          const averageRating = allRatings.length > 0
-            ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1)
-            : '0';
-
-          return { ...r, rating: averageRating };
-        });
-
-        setReviews(reviewsWithRating);
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load reviews');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Static reviews data
+  const [reviews] = useState([
+    {
+      id: 'r1',
+      projectTitle: 'React Native App Development',
+      rating: 4.5,
+      comment: 'Great work! Delivered on time with excellent quality.',
+      userName: 'Alice Johnson',
+      duration: '2 weeks ago',
+    },
+    {
+      id: 'r2',
+      projectTitle: 'Website Redesign',
+      rating: 5,
+      comment: 'Amazing design skills, very professional and communicative.',
+      userName: 'Michael Smith',
+      duration: '1 month ago',
+    },
+    {
+      id: 'r3',
+      projectTitle: 'API Integration',
+      rating: 4,
+      comment: 'Good job integrating APIs seamlessly into the project.',
+      userName: 'Sarah Lee',
+      duration: '3 weeks ago',
+    },
+    {
+      id: 'r4',
+      projectTitle: 'E-commerce Platform',
+      rating: 5,
+      comment: 'Exceeded expectations! Highly recommend.',
+      userName: 'David Brown',
+      duration: '1 week ago',
+    },
+  ]);
 
   const renderStars = (count: number) => (
     <View style={{ flexDirection: 'row' }}>
@@ -86,13 +68,11 @@ export default function ReviewsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {loading && <ActivityIndicator size="large" color="#6B7280" />}
-        {error && <Text style={styles.error}>{error}</Text>}
-        {!loading && !error && reviews.length === 0 && (
+        {reviews.length === 0 && (
           <Text style={styles.noReviews}>No reviews for completed projects yet.</Text>
         )}
 
-        {!loading && reviews.map((review: any) => (
+        {reviews.map((review) => (
           <Pressable
             key={review.id}
             style={({ pressed }) => [
@@ -136,7 +116,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827' },
   scroll: { padding: 20 },
-  error: { color: 'red', marginTop: 16 },
   noReviews: {
     color: '#6B7280',
     textAlign: 'center',

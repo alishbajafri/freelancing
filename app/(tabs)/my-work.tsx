@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import axios from "axios";
-import { API_BASE_URL } from "@/config";
-import WorkCard from "@/components/WorkCard";
 import { Briefcase, CheckCircle, FileText } from "lucide-react-native";
+import WorkCard from "@/components/WorkCard";
 
 interface Milestone {
   title: string;
@@ -30,102 +27,82 @@ interface Project {
   description?: string;
   milestones?: Milestone[];
   postedTime?: string;
-  proposalStatus?: "submitted" | "shortlisted" | "rejected"; // ✅ added
+  proposalStatus?: "submitted" | "shortlisted" | "rejected";
 }
 
 export default function MyWorkScreen() {
   const [activeTab, setActiveTab] = useState<"Active" | "Completed" | "Proposals">("Active");
-  const [loading, setLoading] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
 
-  useEffect(() => {
-    fetchProjects();
-  }, [activeTab]);
+  // 🔹 Static projects data
+  const allProjects: Project[] = [
+    {
+      id: "1",
+      title: "Mobile App Redesign",
+      client: "Acme Corp",
+      budget: "$1200",
+      deadline: "Dec 2025",
+      location: "Remote",
+      status: "inProgress",
+      milestones: [
+        { title: "UI Design", approvalStatus: "approved", priceUSD: "$300" },
+        { title: "Prototype", approvalStatus: "pending", priceUSD: "$200" },
+      ],
+    },
+    {
+      id: "2",
+      title: "Website Development",
+      client: "Globex Inc",
+      budget: "$2000",
+      deadline: "Nov 2025",
+      location: "Remote",
+      status: "completed",
+      milestones: [
+        { title: "Backend Setup", approvalStatus: "approved", priceUSD: "$1000" },
+        { title: "Frontend Implementation", approvalStatus: "approved", priceUSD: "$1000" },
+      ],
+    },
+    {
+      id: "3",
+      title: "Landing Page Proposal",
+      client: "Soylent",
+      budget: "$500",
+      deadline: "Dec 2025",
+      location: "Remote",
+      status: "proposal",
+      proposalStatus: "shortlisted",
+      milestones: [],
+    },
+  ];
 
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/earnings`)
-      .then(res => {
-        const sum = res.data.reduce((acc: number, item: any) => acc + item.amount, 0);
-        setTotalEarnings(sum);
-      })
-      .catch(err => console.log("❌ Earnings fetch error:", err));
-  }, []);
+  const projects = allProjects.filter((p) => {
+    if (activeTab === "Active") return p.status === "inProgress";
+    if (activeTab === "Completed") return p.status === "completed";
+    if (activeTab === "Proposals") return p.status === "proposal";
+    return false;
+  });
 
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      let statusFilter = "";
-
-      if (activeTab === "Active") statusFilter = "inProgress";
-      else if (activeTab === "Completed") statusFilter = "completed";
-      else if (activeTab === "Proposals") statusFilter = "proposal";
-
-      const res = await axios.get(`${API_BASE_URL}/projects?status=${statusFilter}`);
-
-      const mapped = res.data.map((p: Project) => {
-        const totalMilestones = p.milestones?.length || 0;
-        const approvedMilestones =
-          p.milestones?.filter((m) => m.approvalStatus === "approved").length || 0;
-        const progress =
-          totalMilestones > 0 ? Math.round((approvedMilestones / totalMilestones) * 100) : 0;
-
-        return {
-          ...p,
-          client: p.client || "Unknown Client",
-          budget: p.budget || "N/A",
-          deadline: p.deadline || "No deadline",
-          location: p.location || "Remote",
-          progress: p.status === "inProgress" ? progress : p.status === "completed" ? 100 : 0,
-          completedDate: p.status === "completed" ? "Oct 2025" : "—",
-          rating: p.status === "completed" ? 4.8 : null,
-          proposedBudget: p.budget,
-          submittedDate: p.postedTime ? new Date(p.postedTime).toDateString() : "—",
-        };
-      });
-
-      setProjects(mapped);
-    } catch (error) {
-      console.error("❌ Error fetching projects:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const shortlistedCount = projects.filter((p) => p.proposalStatus === "shortlisted").length;
 
   const getStats = () => {
-    let total = 0;
-
     if (activeTab === "Active") {
-      total = projects.reduce((sum, p) => {
-        const approvedMilestones = p.milestones?.filter(m => m.approvalStatus === "approved") || [];
-        const earned = approvedMilestones.reduce((s, m) => {
-          const price = Number(m.priceUSD?.replace("$", "")) || 0;
-          return s + price;
-        }, 0);
+      const total = projects.reduce((sum, p) => {
+        const earned = p.milestones?.filter((m) => m.approvalStatus === "approved").reduce((s, m) => s + Number(m.priceUSD?.replace("$", "") || 0), 0) || 0;
         return sum + earned;
       }, 0);
-
       return { label: "Total Earned (Approved)", value: `$${total}`, color: "#2563EB" };
     }
 
     if (activeTab === "Completed") {
-      total = projects.reduce((sum, p) => {
-        const allMilestones = p.milestones || [];
-        const earned = allMilestones.reduce((s, m) => {
-          const price = Number(m.priceUSD?.replace("$", "")) || 0;
-          return s + price;
-        }, 0);
+      const total = projects.reduce((sum, p) => {
+        const earned = p.milestones?.reduce((s, m) => s + Number(m.priceUSD?.replace("$", "") || 0), 0) || 0;
         return sum + earned;
       }, 0);
-
       return { label: "Total Earned", value: `$${total}`, color: "#10B981" };
     }
 
-    return { label: "", value: "", color: "#F59E0B" }; // ✅ proposals won't use value now
+    return { label: "", value: "", color: "#F59E0B" };
   };
 
-  const shortlistedCount = projects.filter(p => p.proposalStatus === "shortlisted").length;
   const stats = getStats();
 
   return (
@@ -136,18 +113,13 @@ export default function MyWorkScreen() {
         <Text style={styles.headerSubtitle}>Track your active, completed, and proposed projects</Text>
       </View>
 
-      {/* ✅ Stats */}
+      {/* Stats */}
       <View style={[styles.statsContainer, { borderLeftColor: stats.color }]}>
-        
-        {/* Projects count */}
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{projects.length}</Text>
           <Text style={styles.statLabel}>Projects</Text>
         </View>
 
-        <View style={styles.verticalDivider} />
-
-        {/* ✅ Show money stats on Active & Completed only */}
         {activeTab !== "Proposals" && (
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: stats.color }]}>{stats.value}</Text>
@@ -155,7 +127,6 @@ export default function MyWorkScreen() {
           </View>
         )}
 
-        {/* ✅ Show Shortlisted on proposals tab */}
         {activeTab === "Proposals" && (
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: "#2563EB" }]}>{shortlistedCount}</Text>
@@ -188,16 +159,14 @@ export default function MyWorkScreen() {
 
       {/* Projects List */}
       <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 80 }}>
-        {loading ? (
-          <ActivityIndicator size="large" color={stats.color} style={{ marginTop: 50 }} />
-        ) : projects.length > 0 ? (
+        {projects.length > 0 ? (
           projects.map((project) => (
             <WorkCard key={project.id} project={project} type={activeTab.toLowerCase()} />
           ))
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No {activeTab.toLowerCase()} projects found</Text>
-            <Text style={styles.emptySubtext}>Try switching tabs or refresh</Text>
+            <Text style={styles.emptySubtext}>Try switching tabs</Text>
           </View>
         )}
       </ScrollView>
@@ -236,7 +205,6 @@ const styles = StyleSheet.create({
   statItem: { alignItems: "center" },
   statValue: { fontSize: 20, fontWeight: "700", color: "#111827" },
   statLabel: { fontSize: 13, color: "#6B7280", marginTop: 2 },
-  verticalDivider: { width: 1, backgroundColor: "#E5E7EB", height: "100%" },
 
   tabsContainer: {
     flexDirection: "row",

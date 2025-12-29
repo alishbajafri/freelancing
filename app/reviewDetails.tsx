@@ -1,44 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config';
-import { ArrowLeft, Star } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft, Star } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 export default function ReviewDetails() {
-  const { id } = useLocalSearchParams();
   const router = useRouter();
-  const [review, setReview] = useState<any>(null);
-  const [project, setProject] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    axios.get(`${API_BASE_URL}/reviews/${id}`)
-      .then(res => setReview(res.data))
-      .catch(() => setReview(null))
-      .finally(() => setLoading(false));
-  }, [id]);
+  // Static project and review data
+  const project = {
+    title: 'React Native App Development',
+    milestones: [
+      { title: 'UI Design', duration: '1 week', details: 'Created app screens and flows' },
+      { title: 'API Integration', duration: '1 week', details: 'Connected APIs and handled data' },
+      { title: 'Testing & QA', duration: '3 days', details: 'Performed testing and bug fixes' },
+    ],
+  };
 
-  useEffect(() => {
-    if (!review) return;
-    axios.get(`${API_BASE_URL}/projects`)
-      .then(res => {
-        const proj = res.data.find((p: any) => 
-          p.title === review.projectTitle && p.status === 'completed'
-        );
-        setProject(proj);
-      })
-      .catch(err => console.log(err));
-  }, [review]);
+  const review = {
+    projectTitle: project.title,
+    communication: 5,
+    quality: 4,
+    punctuality: 5,
+    milestones: [
+      { title: 'UI Design', rating: 5 },
+      { title: 'API Integration', rating: 4 },
+      { title: 'Testing & QA', rating: 5 },
+    ],
+    comment: 'Excellent work! Delivered on time with high quality.',
+    duration: '2 weeks ago',
+  };
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
-  if (!review) return <Text style={{ textAlign: 'center', marginTop: 20 }}>Review not found</Text>;
-  if (!project) return <Text style={{ textAlign: 'center', marginTop: 20 }}>This review is not for a completed project.</Text>;
-
-  // Use milestone ratings from review instead of project
-  const milestoneRatings = (review?.milestones || []).map((m: any) => m.rating || 0);
-  const extraRatings = [review?.communication || 0, review?.quality || 0, review?.punctuality || 0];
+  // Calculate average rating
+  const milestoneRatings = (review?.milestones || []).map((m) => m.rating || 0);
+  const extraRatings = [review.communication, review.quality, review.punctuality];
   const allRatings = [...milestoneRatings, ...extraRatings];
   const averageRating = allRatings.length > 0
     ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1)
@@ -87,27 +82,25 @@ export default function ReviewDetails() {
         <Text style={styles.comment}>{review.comment}</Text>
         <Text style={styles.duration}>⏱ Duration: {review.duration}</Text>
 
-        {/* Milestones from review */}
+        {/* Milestones */}
         <Text style={styles.sectionTitle}>Completed Milestones</Text>
-        {(review?.milestones || []).map((m: any, idx: number) => (
-          <View key={idx} style={styles.milestone}>
-            <View style={styles.milestoneHeader}>
-              <Text style={styles.milestoneTitle}>{m.title}</Text>
-              {renderStars(m.rating || 0)}
+        {review.milestones.map((m, idx) => {
+          const milestoneDetails = project.milestones.find(pm => pm.title === m.title);
+          return (
+            <View key={idx} style={styles.milestone}>
+              <View style={styles.milestoneHeader}>
+                <Text style={styles.milestoneTitle}>{m.title}</Text>
+                {renderStars(m.rating)}
+              </View>
+              {milestoneDetails && (
+                <>
+                  <Text style={styles.milestoneDuration}>{milestoneDetails.duration}</Text>
+                  <Text style={styles.milestoneDetails}>{milestoneDetails.details}</Text>
+                </>
+              )}
             </View>
-            {/* Optional: get duration/details from project if needed */}
-            {project?.milestones?.find((pm: any) => pm.title === m.title) && (
-              <>
-                <Text style={styles.milestoneDuration}>
-                  {project.milestones.find((pm: any) => pm.title === m.title).duration}
-                </Text>
-                <Text style={styles.milestoneDetails}>
-                  {project.milestones.find((pm: any) => pm.title === m.title).details}
-                </Text>
-              </>
-            )}
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );
