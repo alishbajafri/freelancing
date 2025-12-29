@@ -10,7 +10,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, Wallet, TrendingUp, Star } from 'lucide-react-native';
+import {
+  Bell,
+  Wallet,
+  TrendingUp,
+  Star,
+  AlertTriangle,
+} from 'lucide-react-native';
 
 import { storageGet } from "@/utils/storage";
 import { useAuth } from '@/contexts/AuthContext';
@@ -179,6 +185,17 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Dispute Button (NEW, SAFE ADDITION) */}
+          <TouchableOpacity
+            style={styles.disputeButton}
+            onPress={() => router.push('/FDisputes')}
+          >
+            <AlertTriangle size={18} color="#DC2626" />
+            <Text style={styles.disputeButtonText}>
+              Dispute
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Recommended Projects */}
@@ -201,6 +218,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -210,9 +228,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginBottom: 16,
   },
+
   greeting: { fontSize: 16, color: '#6B7280' },
   userName: { fontSize: 24, fontWeight: 'bold', color: '#111827' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
   walletButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,22 +247,39 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     gap: 6,
   },
-  walletText: { fontSize: 14, fontWeight: '600', color: '#3B82F6' },
+
+  walletText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+
   notificationButton: { padding: 8 },
+
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 12,
     marginBottom: 24,
   },
-  section: { paddingHorizontal: 20, marginBottom: 24 },
+
+  section: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 16,
   },
-  quickActions: { flexDirection: 'row', gap: 12 },
+
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
   actionButton: {
     flex: 1,
     backgroundColor: '#3B82F6',
@@ -245,15 +287,40 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+
   actionButtonSecondary: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D1D5DB',
   },
+
   actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  actionButtonSecondaryText: { color: '#374151' },
+
+  actionButtonSecondaryText: {
+    color: '#374151',
+  },
+
+  /* ===== Dispute Button Styles (NEW) ===== */
+  disputeButton: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+
+  disputeButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
 });

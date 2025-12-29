@@ -13,6 +13,7 @@ root/
 │   ├─ earning.tsx
 │   ├─ Bid-now.tsx
 │   ├─ index.tsx
+│   ├─ FDisputes.tsx
 │   ├─ find-project.tsx
 │   ├─ profile-view.tsx
 │   ├─ index.tsx
