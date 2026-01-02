@@ -75,9 +75,9 @@ export default function ClientHome() {
                 key={index}
                 activeOpacity={0.8}
                 onPress={() => {
-                  if (isDisputes) router.push('/client/Disputes');
-                  if (isProjects) router.push('/client/Projects');
-                  if (isWallet) router.push('/client/Wallet');
+                  if (isDisputes) router.push('/client/disputes');
+                  if (isProjects) router.push('/client/projects');
+                  if (isWallet) router.push('/client/wallet');
                 }}
               >
                 <StatsCard
@@ -106,7 +106,7 @@ export default function ClientHome() {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push('/client/Freelancers')}
+            onPress={() => router.push('/client/freelancers')}
           >
             <View style={[styles.actionIconContainer, { backgroundColor: '#10B981' }]}>
               <Search size={24} color="#FFFFFF" strokeWidth={2} />
@@ -121,7 +121,7 @@ export default function ClientHome() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Projects</Text>
-          <TouchableOpacity onPress={() => router.push('/client/Projects')}>
+          <TouchableOpacity onPress={() => router.push('/client/projects')}>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -136,7 +136,7 @@ export default function ClientHome() {
             deadline={project.deadline}
             onPress={() =>
               router.push({
-                pathname: '/client/ProjectDetail',
+                pathname: '/client/project-detail',
                 params: { id: project.id },
               })
             }

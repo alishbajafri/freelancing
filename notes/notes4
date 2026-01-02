@@ -52,29 +52,6 @@ root/
 ├─ contexts/
 │   ├─ authcontext.tsx
 │   └─ walletcontext.tsx
-├─ freelance-backend/
-│   ├─ .env
-│   ├─ package-lock.json
-│   ├─ package.json
-│   ├─ server.js            
-│   ├─ models/
-│   │   ├─ earning.js
-│   │   ├─ conversation.js
-│   │   ├─ messages.js      <-- backend MongoDB model
-│   │   ├─ project.js
-│   │   ├─ transcript.js
-│   │   ├─ user.js
-│   │   └─ review.js
-│   ├─ node_modules/
-│   └─ routes/
-│       ├─ earningroutes.js
-│       ├─ messageroutes.js
-│       ├─ conversationroutes.js
-│       ├─ projectroutes.js
-        ├─ profileroutes.js
-│       ├─ reviewroutes.js
-│       ├─ transcriptroutes.js
-│       └─ userroutes.js
 ├─ hooks/
 │   └─ useFrameworkReady.ts
 ├─ models/                  <-- frontend models

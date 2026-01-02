@@ -78,7 +78,7 @@ export default function Projects() {
               deadline={project.deadline}
               onPress={() =>
                 router.push({
-                  pathname: '/client/ProjectDetail',
+                  pathname: '/client/project-detail',
                   params: { id: project.id },
                 })
               }

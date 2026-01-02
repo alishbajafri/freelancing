@@ -1,3 +1,5 @@
-// app/client/index.tsx
-import ClientHome from './ClientHome';
-export default ClientHome;
+import { Redirect } from 'expo-router';
+
+export default function ClientIndex() {
+  return <Redirect href="/client/client-home" />;
+}

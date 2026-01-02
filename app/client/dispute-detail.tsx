@@ -12,8 +12,6 @@ import {
   Clock,
   MessageSquare,
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-
 
 interface Evidence {
   id: string;
@@ -91,7 +89,6 @@ const ADMIN_REVIEW = {
 };
 
 export default function DisputeDetail() {
-  const router = useRouter();
   const getEvidenceIcon = (type: Evidence['type']) => {
     switch (type) {
       case 'document':
@@ -128,9 +125,7 @@ export default function DisputeDetail() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton}>
           <ArrowLeft size={24} color="#1F2937" strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Dispute Details</Text>
