@@ -6,18 +6,40 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { useEffect } from 'react';
 
-function RootNavigation() {
+function RootNavigationWrapper() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname(); // current path
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && !user && pathname !== '/login') {
-      router.replace('/login'); // redirect only if not already on login
+    if (isLoading) return; // wait until user is loaded
+
+    // 🔹 Redirect unauthenticated users to login (except signup)
+    const publicRoutes = ['/login', '/signup', '/forgot-password'];
+
+    if (!user && !publicRoutes.includes(pathname)) {
+      router.replace('/login');
+      return;
+    }
+
+
+    // 🔹 Redirect logged-in users away from login page
+    if (user && pathname === '/login') {
+      if (user.role === 'freelancer') router.replace('/');
+      else router.replace('/client');
+      return;
+    }
+
+    // 🔹 Redirect logged-in users away from signup page
+    if (user && pathname === '/signup') {
+      if (user.role === 'freelancer') router.replace('/');
+      else router.replace('/client');
+      return;
     }
   }, [isLoading, user, pathname]);
 
-  if (isLoading || (!user && pathname !== '/login')) {
+  // Loading spinner while checking auth
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -25,7 +47,7 @@ function RootNavigation() {
     );
   }
 
-  return <Slot />; // user logged in or already on login
+  return <Slot />;
 }
 
 export default function RootLayout() {
@@ -34,7 +56,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <WalletProvider>
-        <RootNavigation />
+        <RootNavigationWrapper />
         <StatusBar style="auto" />
       </WalletProvider>
     </AuthProvider>

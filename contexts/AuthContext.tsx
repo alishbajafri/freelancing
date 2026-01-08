@@ -66,45 +66,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 //yeh tak chal raha hai 
   // 🔥 REAL LOGIN
+  const STATIC_USERS = [
+    {
+      id: "1",
+      name: "John Freelancer",
+      email: "freelancer@test.com",
+      password: "123456",
+      role: "freelancer",
+    },
+    {
+      id: "2",
+      name: "Client User",
+      email: "client@test.com",
+      password: "123456",
+      role: "client",
+    },
+  ];
+
   const login = async (email: string, password: string) => {
     setIsLoading(true);
 
     try {
-      // 1️⃣ Login to get token
-      const res = await fetch(`${API_BASE_URL}/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
 
-      const data = await res.json();
+      // Get stored users
+      const storedUsersRaw = await storageGet("users");
+      const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
 
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
+      const allUsers = [...STATIC_USERS, ...storedUsers];
 
-      const { token } = data;
+      const user = allUsers.find(
+        (u: any) => u.email === normalizedEmail && u.password === normalizedPassword
+      );
 
-      await storageSet("token", token);
+      if (!user) throw new Error("Invalid email or password");
 
-      // 2️⃣ Fetch full user profile using token
-      const profileRes = await fetch(`${API_BASE_URL}/users/me`, {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-
-      const fullUser = await profileRes.json();
-
-      if (!profileRes.ok) {
-        throw new Error(fullUser.message || "Failed to load user profile");
-      }
-
-      await storageSet("user", JSON.stringify(fullUser));
-      setUser(fullUser); // ← full user info with skills, bio, etc.
-
+      await storageSet("user", JSON.stringify(user));
+      setUser(user); // triggers RootNavigation redirect
     } finally {
       setIsLoading(false);
     }
   };
+
 
 
   // 🔥 LOGOUT
